@@ -1,0 +1,29 @@
+{
+  "installation_id": "SOL-2025-103",
+  "message": "String 4 is reading 0V. What should I check first and in what order?",
+  "context": {
+    "installation_id": "SOL-2025-103",
+    "site_address": "456 Oak Lane, Denver, CO",
+    "system_specs": {
+      "panel_count": 24,
+      "panel_wattage": 400,
+      "inverter_model": "Enphase IQ8+",
+      "system_capacity_kw": 9.6
+    },
+    "telemetry": {
+      "string_voltages": [385.2, 382.1, 384.8, 0.0],
+      "inverter_fault_codes": ["String voltage imbalance"]
+    },
+    "inspection_notes": "Burn mark on MC4 connector at string 4."
+  },
+  "history": [
+    {
+      "role": "user",
+      "content": "The system is producing 50% less than expected."
+    },
+    {
+      "role": "assistant",
+      "content": "One string appears offline. Inspect the combiner box for string 4."
+    }
+  ]
+}

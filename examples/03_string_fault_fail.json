@@ -1,0 +1,41 @@
+{
+  "installation_id": "SOL-2025-103",
+  "site_address": "456 Oak Lane, Denver, CO",
+  "system_specs": {
+    "panel_count": 24,
+    "panel_wattage": 400,
+    "inverter_model": "Enphase IQ8+",
+    "system_capacity_kw": 9.6,
+    "installation_date": "2025-06-01",
+    "mounting_type": "roof-mount"
+  },
+  "telemetry": {
+    "timestamp": "2025-06-20T15:45:00Z",
+    "ac_voltage": 236.8,
+    "dc_voltage": 385.2,
+    "ac_power_kw": 4.8,
+    "daily_production_kwh": 22.1,
+    "expected_daily_production_kwh": 44.0,
+    "inverter_fault_codes": [
+      "AC voltage out of range",
+      "String voltage imbalance"
+    ],
+    "string_voltages": [385.2, 382.1, 384.8, 0.0],
+    "ambient_temperature_c": 32,
+    "irradiance_wm2": 850
+  },
+  "inspection_notes": "String 4 reads 0V at combiner. Burn mark visible on one MC4 connector.",
+  "technician_observations": [
+    "String 4 completely offline — likely open circuit",
+    "AC voltage dipping below 235V under load",
+    "Customer reports system never hit full production since install",
+    "Smell of overheated plastic near combiner box"
+  ],
+  "commissioning_checklist": {
+    "ground_fault_test": true,
+    "arc_fault_test": true,
+    "labeling_complete": false,
+    "monitoring_online": true,
+    "combiner_inspection_complete": false
+  }
+}

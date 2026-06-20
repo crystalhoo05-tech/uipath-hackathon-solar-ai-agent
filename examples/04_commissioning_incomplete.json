@@ -1,0 +1,40 @@
+{
+  "installation_id": "SOL-2025-104",
+  "site_address": "2100 Commerce St, Dallas, TX",
+  "system_specs": {
+    "panel_count": 40,
+    "panel_wattage": 450,
+    "inverter_model": "SMA Sunny Tripower 20.0",
+    "system_capacity_kw": 18.0,
+    "installation_date": "2025-06-18",
+    "mounting_type": "flat-roof ballast"
+  },
+  "telemetry": {
+    "timestamp": "2025-06-20T11:00:00Z",
+    "ac_voltage": 239.5,
+    "dc_voltage": 720.0,
+    "ac_power_kw": 14.5,
+    "daily_production_kwh": 12.0,
+    "expected_daily_production_kwh": 55.0,
+    "inverter_fault_codes": [],
+    "string_voltages": [720.0, 718.5, 719.2, 717.8, 720.1],
+    "ambient_temperature_c": 30,
+    "irradiance_wm2": 800
+  },
+  "inspection_notes": "Install completed 2 days ago. PTO not yet granted. Several checklist items pending.",
+  "technician_observations": [
+    "AC disconnect not yet labeled per NEC",
+    "No rapid shutdown test performed",
+    "Monitoring portal shows site but no historical data",
+    "Interconnection paperwork not submitted"
+  ],
+  "commissioning_checklist": {
+    "ground_fault_test": false,
+    "arc_fault_test": false,
+    "labeling_complete": false,
+    "monitoring_online": false,
+    "ac_disconnect_tested": false,
+    "rapid_shutdown_verified": false,
+    "pto_application_submitted": false
+  }
+}

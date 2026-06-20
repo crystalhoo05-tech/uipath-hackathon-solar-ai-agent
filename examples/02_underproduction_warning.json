@@ -1,0 +1,37 @@
+{
+  "installation_id": "SOL-2025-102",
+  "site_address": "88 Palm Drive, Phoenix, AZ",
+  "system_specs": {
+    "panel_count": 32,
+    "panel_wattage": 375,
+    "inverter_model": "Fronius Primo 12.0",
+    "system_capacity_kw": 12.0,
+    "installation_date": "2025-04-22",
+    "mounting_type": "ground-mount"
+  },
+  "telemetry": {
+    "timestamp": "2025-06-20T13:00:00Z",
+    "ac_voltage": 241.0,
+    "dc_voltage": 612.4,
+    "ac_power_kw": 7.2,
+    "daily_production_kwh": 41.0,
+    "expected_daily_production_kwh": 58.0,
+    "inverter_fault_codes": [],
+    "string_voltages": [612.4, 608.7, 610.2, 605.8],
+    "ambient_temperature_c": 41,
+    "irradiance_wm2": 980
+  },
+  "inspection_notes": "Partial shading from new tree growth on east array between 10am-1pm.",
+  "technician_observations": [
+    "Production 29% below expected despite high irradiance",
+    "East-facing string 4 consistently lowest voltage",
+    "No inverter faults logged"
+  ],
+  "commissioning_checklist": {
+    "ground_fault_test": true,
+    "arc_fault_test": true,
+    "labeling_complete": true,
+    "monitoring_online": true,
+    "shading_assessment_done": false
+  }
+}
