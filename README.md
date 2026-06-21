@@ -112,7 +112,7 @@ gcloud builds submit --config=deploy/gcp/cloudbuild.yaml --project=YOUR_GCP_PROJ
 |----------|-------------|
 | `GOOGLE_CLOUD_PROJECT` | GCP project ID (enables Vertex AI) |
 | `GOOGLE_CLOUD_LOCATION` | Region, e.g. `us-central1` |
-| `GEMINI_MODEL` | Model name, default `gemini-2.0-flash` |
+| `GEMINI_MODEL` | Model name, default `gemini-2.5-flash` |
 | `GEMINI_API_KEY` | Optional; use for dev instead of Vertex AI |
 | `ENVIRONMENT` | `production` or `development` |
 

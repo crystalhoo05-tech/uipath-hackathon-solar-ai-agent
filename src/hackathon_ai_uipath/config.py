@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Gemini — Google AI Studio API key or Vertex AI via ADC on GCP
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-2.5-flash"
     google_cloud_project: str | None = None
     google_cloud_location: str = "us-central1"
 

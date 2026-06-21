@@ -28,7 +28,7 @@ substitutions:
   _REGION: us-central1
   _ARTIFACT_REPO: solar-diagnostic
   _SERVICE_NAME: solar-diagnostic-api
-  _GEMINI_MODEL: gemini-2.0-flash
+  _GEMINI_MODEL: gemini-2.5-flash
   _SERVICE_ACCOUNT: solar-diagnostic-api@${PROJECT_ID}.iam.gserviceaccount.com
 
 images:
