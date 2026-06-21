@@ -11,24 +11,28 @@ from hackathon_ai_uipath.models.schemas import (
     DiagnosticResponse,
 )
 
-SYSTEM_INSTRUCTION = """You are an expert solar PV commissioning and post-installation
+SYSTEM_INSTRUCTION = """You are an expert solar PV service and post-installation
 diagnostic engineer.
 
-Your job is to analyze installation data after a solar system has been installed and identify:
-- Electrical issues (string mismatch, grounding, inverter faults, voltage anomalies)
-- Mechanical issues (mounting, tilt, shading, wire management)
-- Performance issues (underproduction vs expected output)
-- Safety issues (arc fault risk, exposed conductors, labeling)
-- Commissioning gaps (incomplete checklist items, missing tests)
+Analyze support case data for installed solar systems and identify:
+- Performance issues (output below expected, clipping, underproduction)
+- Electrical and inverter issues (faults, grid disconnect, inverter offline)
+- Communication issues (stale telemetry, monitoring gaps)
+- Battery and storage concerns when battery data is present
+- Safety risks indicated by alerts or case summaries
+- Warranty implications based on warrantyEligibilityFlag and issue category
+- Recurring issues suggested by historicalCases
 
 Be practical and field-oriented. Base conclusions on the evidence provided.
 When data is missing, note assumptions and ask focused follow-up questions.
-Prioritize safety-critical findings first."""
+Prioritize safety-critical and high-priority cases first.
+Consider alertHistory severity and whether historicalCases show repeat failures."""
 
 DIAGNOSTIC_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
-        "installation_id": {"type": "string"},
+        "caseId": {"type": "string"},
+        "solarSystemId": {"type": "string"},
         "overall_status": {"type": "string", "enum": ["pass", "warning", "fail"]},
         "summary": {"type": "string"},
         "findings": {
@@ -43,7 +47,8 @@ DIAGNOSTIC_RESPONSE_SCHEMA: dict[str, Any] = {
                             "mechanical",
                             "performance",
                             "safety",
-                            "commissioning",
+                            "communication",
+                            "warranty",
                         ],
                     },
                     "severity": {"type": "string", "enum": ["critical", "warning", "info"]},
@@ -57,16 +62,19 @@ DIAGNOSTIC_RESPONSE_SCHEMA: dict[str, Any] = {
         "recommendations": {"type": "array", "items": {"type": "string"}},
         "priority_actions": {"type": "array", "items": {"type": "string"}},
         "estimated_impact": {"type": "string"},
+        "warranty_assessment": {"type": "string"},
         "follow_up_questions": {"type": "array", "items": {"type": "string"}},
     },
     "required": [
-        "installation_id",
+        "caseId",
+        "solarSystemId",
         "overall_status",
         "summary",
         "findings",
         "recommendations",
         "priority_actions",
         "estimated_impact",
+        "warranty_assessment",
         "follow_up_questions",
     ],
 }
@@ -74,11 +82,11 @@ DIAGNOSTIC_RESPONSE_SCHEMA: dict[str, Any] = {
 CHAT_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
-        "installation_id": {"type": "string"},
+        "caseId": {"type": "string"},
         "reply": {"type": "string"},
         "suggested_actions": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["installation_id", "reply", "suggested_actions"],
+    "required": ["caseId", "reply", "suggested_actions"],
 }
 
 
@@ -89,8 +97,7 @@ class SolarDiagnosticAgent:
     def run_diagnostic(self, request: DiagnosticRequest) -> DiagnosticResponse:
         payload = request.model_dump(mode="json", exclude_none=True)
         user_prompt = (
-            "Analyze this solar post-installation diagnostic payload "
-            "and return a structured report.\n\n"
+            "Analyze this solar service case payload and return a structured diagnostic report.\n\n"
             f"{json.dumps(payload, indent=2)}"
         )
 
@@ -105,7 +112,7 @@ class SolarDiagnosticAgent:
         context_block = ""
         if request.context:
             context_data = request.context.model_dump(mode="json", exclude_none=True)
-            context_block = "\n\nInstallation context:\n" + json.dumps(context_data, indent=2)
+            context_block = "\n\nCase context:\n" + json.dumps(context_data, indent=2)
 
         history_block = ""
         if request.history:
@@ -113,7 +120,7 @@ class SolarDiagnosticAgent:
             history_block = "\n\nConversation history:\n" + "\n".join(history_lines)
 
         user_prompt = (
-            f"Installation ID: {request.installation_id}\n"
+            f"Case ID: {request.caseId}\n"
             f"Technician message: {request.message}"
             f"{context_block}"
             f"{history_block}\n\n"

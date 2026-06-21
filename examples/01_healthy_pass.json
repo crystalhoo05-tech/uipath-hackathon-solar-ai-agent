@@ -1,38 +1,19 @@
 {
-  "installation_id": "SOL-2025-101",
-  "site_address": "742 Evergreen Terrace, Springfield, IL",
-  "system_specs": {
-    "panel_count": 18,
-    "panel_wattage": 410,
-    "inverter_model": "SolarEdge SE7.6K",
-    "system_capacity_kw": 7.38,
-    "installation_date": "2025-05-10",
-    "mounting_type": "roof-mount"
+  "caseId": "CASE-2025-101",
+  "issueCategory": "Performance",
+  "priority": "Low",
+  "caseSummary": "Customer reports system operating normally after recent service visit.",
+  "solarSystemId": "SOL-2025-101",
+  "customerId": "CUST-88421",
+  "warrantyEligibilityFlag": true,
+  "systemData": {
+    "currentOutputKw": 6.8,
+    "expectedOutputKw": 7.0,
+    "inverterStatus": "Online",
+    "batteryChargePercent": 82,
+    "lastCommunication": "2025-06-20T14:30:00Z",
+    "gridConnectionStatus": "Connected"
   },
-  "telemetry": {
-    "timestamp": "2025-06-20T14:30:00Z",
-    "ac_voltage": 240.2,
-    "dc_voltage": 378.5,
-    "ac_power_kw": 6.8,
-    "daily_production_kwh": 38.5,
-    "expected_daily_production_kwh": 39.2,
-    "inverter_fault_codes": [],
-    "string_voltages": [378.5, 377.9, 379.1],
-    "ambient_temperature_c": 28,
-    "irradiance_wm2": 920
-  },
-  "inspection_notes": "All strings balanced. No visible damage. Wiring neat and labeled.",
-  "technician_observations": [
-    "Production within 2% of expected",
-    "Inverter operating normally",
-    "No hot spots detected on IR scan"
-  ],
-  "commissioning_checklist": {
-    "ground_fault_test": true,
-    "arc_fault_test": true,
-    "labeling_complete": true,
-    "monitoring_online": true,
-    "ac_disconnect_tested": true,
-    "rapid_shutdown_verified": true
-  }
+  "alertHistory": [],
+  "historicalCases": []
 }

@@ -1,29 +1,40 @@
 {
-  "installation_id": "SOL-2025-103",
-  "message": "String 4 is reading 0V. What should I check first and in what order?",
+  "caseId": "CASE-2025-103",
+  "message": "The inverter is faulted and grid is disconnected. What should I check first?",
   "context": {
-    "installation_id": "SOL-2025-103",
-    "site_address": "456 Oak Lane, Denver, CO",
-    "system_specs": {
-      "panel_count": 24,
-      "panel_wattage": 400,
-      "inverter_model": "Enphase IQ8+",
-      "system_capacity_kw": 9.6
+    "caseId": "CASE-2025-103",
+    "issueCategory": "Electrical",
+    "priority": "High",
+    "caseSummary": "Inverter faulted and grid disconnected.",
+    "solarSystemId": "SOL-2025-103",
+    "customerId": "CUST-33109",
+    "warrantyEligibilityFlag": true,
+    "systemData": {
+      "currentOutputKw": 1.2,
+      "expectedOutputKw": 5.8,
+      "inverterStatus": "Fault - Grid Disconnected",
+      "batteryChargePercent": 41,
+      "lastCommunication": "2025-06-20T15:45:00Z",
+      "gridConnectionStatus": "Disconnected"
     },
-    "telemetry": {
-      "string_voltages": [385.2, 382.1, 384.8, 0.0],
-      "inverter_fault_codes": ["String voltage imbalance"]
-    },
-    "inspection_notes": "Burn mark on MC4 connector at string 4."
+    "alertHistory": [
+      {
+        "alertCode": "INV-GRID-FAULT",
+        "alertMessage": "Inverter lost grid connection",
+        "alertTimestamp": "2025-06-20T15:40:00Z",
+        "severity": "Critical"
+      }
+    ],
+    "historicalCases": []
   },
   "history": [
     {
       "role": "user",
-      "content": "The system is producing 50% less than expected."
+      "content": "Customer says the system stopped exporting power this afternoon."
     },
     {
       "role": "assistant",
-      "content": "One string appears offline. Inspect the combiner box for string 4."
+      "content": "Check inverter status and whether the grid connection is stable."
     }
   ]
 }

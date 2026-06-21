@@ -1,22 +1,19 @@
 {
-  "installation_id": "{{installationId}}",
-  "site_address": "{{siteAddress}}",
-  "system_specs": {
-    "panel_count": {{panelCount}},
-    "panel_wattage": {{panelWattage}},
-    "inverter_model": "{{inverterModel}}",
-    "system_capacity_kw": {{systemCapacityKw}}
+  "caseId": "{{caseId}}",
+  "issueCategory": "{{issueCategory}}",
+  "priority": "{{priority}}",
+  "caseSummary": "{{caseSummary}}",
+  "solarSystemId": "{{solarSystemId}}",
+  "customerId": "{{customerId}}",
+  "warrantyEligibilityFlag": {{warrantyEligibilityFlag}},
+  "systemData": {
+    "currentOutputKw": {{currentOutputKw}},
+    "expectedOutputKw": {{expectedOutputKw}},
+    "inverterStatus": "{{inverterStatus}}",
+    "batteryChargePercent": {{batteryChargePercent}},
+    "lastCommunication": "{{lastCommunication}}",
+    "gridConnectionStatus": "{{gridConnectionStatus}}"
   },
-  "telemetry": {
-    "ac_voltage": {{acVoltage}},
-    "dc_voltage": {{dcVoltage}},
-    "ac_power_kw": {{acPowerKw}},
-    "daily_production_kwh": {{dailyProductionKwh}},
-    "expected_daily_production_kwh": {{expectedDailyProductionKwh}},
-    "inverter_fault_codes": {{inverterFaultCodes}},
-    "string_voltages": {{stringVoltages}}
-  },
-  "inspection_notes": "{{inspectionNotes}}",
-  "technician_observations": {{technicianObservations}},
-  "commissioning_checklist": {{commissioningChecklist}}
+  "alertHistory": {{alertHistory}},
+  "historicalCases": {{historicalCases}}
 }

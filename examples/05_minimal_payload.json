@@ -1,15 +1,19 @@
 {
-  "installation_id": "SOL-2025-105",
-  "site_address": "15 Harbor View, San Diego, CA",
-  "system_specs": {
-    "panel_count": 12,
-    "panel_wattage": 390,
-    "inverter_model": "Tesla Powerwall 3",
-    "system_capacity_kw": 4.68
+  "caseId": "CASE-2025-105",
+  "issueCategory": "Performance",
+  "priority": "Low",
+  "caseSummary": "Quick triage requested with limited telemetry available.",
+  "solarSystemId": "SOL-2025-105",
+  "customerId": "CUST-12001",
+  "warrantyEligibilityFlag": false,
+  "systemData": {
+    "currentOutputKw": 3.1,
+    "expectedOutputKw": 0,
+    "inverterStatus": "Online",
+    "batteryChargePercent": 55,
+    "lastCommunication": "2025-06-20T11:00:00Z",
+    "gridConnectionStatus": "Connected"
   },
-  "telemetry": {
-    "ac_power_kw": 3.1,
-    "daily_production_kwh": 18.0
-  },
-  "inspection_notes": "Quick site visit — limited data available."
+  "alertHistory": [],
+  "historicalCases": []
 }

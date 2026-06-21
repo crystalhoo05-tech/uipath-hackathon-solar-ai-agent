@@ -18,26 +18,28 @@ from hackathon_ai_uipath.models.schemas import (
 def mock_agent():
     agent = MagicMock()
     agent.run_diagnostic.return_value = DiagnosticResponse(
-        installation_id="SOL-001",
+        caseId="CASE-001",
+        solarSystemId="SOL-001",
         overall_status="warning",
-        summary="String 4 is offline and production is below expected.",
+        summary="Output is below expected and inverter shows a fault.",
         findings=[
             Finding(
                 category="electrical",
                 severity="critical",
-                title="String 4 voltage at 0V",
-                description="No DC voltage detected on string 4.",
-                evidence="string_voltages[3] = 0.0",
+                title="Inverter fault",
+                description="Inverter is not operating normally.",
+                evidence="systemData.inverterStatus='Fault'",
             )
         ],
-        recommendations=["Inspect combiner box connector on string 4"],
-        priority_actions=["Isolate string 4 and test continuity"],
-        estimated_impact="~25% production loss until repaired",
+        recommendations=["Inspect inverter event log"],
+        priority_actions=["Verify grid connection"],
+        estimated_impact="Significant production loss until repaired",
+        warranty_assessment="Case may be warranty-eligible.",
     )
     agent.chat.return_value = ChatResponse(
-        installation_id="SOL-001",
-        reply="Check the MC4 connector on string 4 at the combiner.",
-        suggested_actions=["Use clamp meter on string 4 leads"],
+        caseId="CASE-001",
+        reply="Check the inverter fault code and grid connection first.",
+        suggested_actions=["Capture inverter event log"],
     )
     return agent
 
@@ -59,17 +61,23 @@ def test_health(client):
 
 def test_run_diagnostic(client, mock_agent):
     payload = {
-        "installation_id": "SOL-001",
-        "system_specs": {
-            "panel_count": 12,
-            "panel_wattage": 400,
-            "inverter_model": "Test Inverter",
-            "system_capacity_kw": 4.8,
+        "caseId": "CASE-001",
+        "solarSystemId": "SOL-001",
+        "issueCategory": "Electrical",
+        "priority": "High",
+        "systemData": {
+            "currentOutputKw": 1.0,
+            "expectedOutputKw": 5.0,
+            "inverterStatus": "Fault",
+            "gridConnectionStatus": "Disconnected",
         },
-        "telemetry": {
-            "string_voltages": [380.0, 0.0],
-            "inverter_fault_codes": ["String fault"],
-        },
+        "alertHistory": [
+            {
+                "alertCode": "INV-FAULT",
+                "alertMessage": "Inverter fault",
+                "severity": "Critical",
+            }
+        ],
     }
 
     response = client.post("/api/v1/diagnostics/run", json=payload)
@@ -77,17 +85,18 @@ def test_run_diagnostic(client, mock_agent):
     body = response.json()
     assert body["overall_status"] == "warning"
     assert body["findings"][0]["severity"] == "critical"
+    assert body["caseId"] == "CASE-001"
     mock_agent.run_diagnostic.assert_called_once()
 
 
 def test_diagnostic_chat(client, mock_agent):
     payload = {
-        "installation_id": "SOL-001",
-        "message": "What should I check first on string 4?",
+        "caseId": "CASE-001",
+        "message": "What should I check first on the inverter?",
     }
 
     response = client.post("/api/v1/diagnostics/chat", json=payload)
     assert response.status_code == 200
     body = response.json()
-    assert "string 4" in body["reply"].lower()
+    assert "inverter" in body["reply"].lower()
     mock_agent.chat.assert_called_once()

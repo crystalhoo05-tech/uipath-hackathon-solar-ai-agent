@@ -8,22 +8,17 @@ from hackathon_ai_uipath.models.schemas import (
     Finding,
 )
 
+FAULT_KEYWORDS = ("fault", "error", "offline", "trip", "failed", "disconnected")
+CRITICAL_ALERTS = ("critical", "high", "severe")
 
-def _commissioning_findings(checklist: dict[str, bool]) -> list[Finding]:
-    findings: list[Finding] = []
-    for item, complete in checklist.items():
-        if complete:
-            continue
-        findings.append(
-            Finding(
-                category="commissioning",
-                severity="warning",
-                title=f"Incomplete: {item.replace('_', ' ')}",
-                description=f"Commissioning item '{item}' was not marked complete.",
-                evidence=f"commissioning_checklist.{item} = false",
-            )
-        )
-    return findings
+
+def _severity_from_alert(severity: str) -> str:
+    normalized = severity.lower()
+    if any(level in normalized for level in CRITICAL_ALERTS):
+        return "critical"
+    if normalized:
+        return "warning"
+    return "info"
 
 
 def _analyze_request(request: DiagnosticRequest) -> DiagnosticResponse:
@@ -32,52 +27,11 @@ def _analyze_request(request: DiagnosticRequest) -> DiagnosticResponse:
     priority_actions: list[str] = []
     follow_up_questions: list[str] = []
 
-    telemetry = request.telemetry
+    system = request.systemData
 
-    if telemetry and telemetry.string_voltages:
-        for index, voltage in enumerate(telemetry.string_voltages, start=1):
-            if voltage == 0:
-                findings.append(
-                    Finding(
-                        category="electrical",
-                        severity="critical",
-                        title=f"String {index} offline",
-                        description=(
-                            f"String {index} is reading 0V, indicating an open circuit "
-                            "or failed connection."
-                        ),
-                        evidence=f"string_voltages[{index - 1}] = 0.0",
-                    )
-                )
-                priority_actions.append(
-                    f"Inspect combiner box and MC4 connectors on string {index}"
-                )
-                recommendations.append(
-                    f"Test continuity and polarity on string {index} before re-energizing"
-                )
-
-    if telemetry and telemetry.inverter_fault_codes:
-        for code in telemetry.inverter_fault_codes:
-            findings.append(
-                Finding(
-                    category="electrical",
-                    severity="warning",
-                    title=f"Inverter fault: {code}",
-                    description="The inverter reported an active fault code.",
-                    evidence=f"inverter_fault_codes contains '{code}'",
-                )
-            )
-
-    if (
-        telemetry
-        and telemetry.daily_production_kwh is not None
-        and telemetry.expected_daily_production_kwh is not None
-        and telemetry.expected_daily_production_kwh > 0
-    ):
+    if system.expectedOutputKw > 0 and system.currentOutputKw >= 0:
         gap_pct = (
-            (telemetry.expected_daily_production_kwh - telemetry.daily_production_kwh)
-            / telemetry.expected_daily_production_kwh
-            * 100
+            (system.expectedOutputKw - system.currentOutputKw) / system.expectedOutputKw * 100
         )
         if gap_pct >= 20:
             severity = "critical" if gap_pct >= 35 else "warning"
@@ -85,67 +39,154 @@ def _analyze_request(request: DiagnosticRequest) -> DiagnosticResponse:
                 Finding(
                     category="performance",
                     severity=severity,
-                    title="Production below expected",
+                    title="Output below expected",
                     description=(
-                        f"Daily production is {gap_pct:.0f}% below expected output "
-                        "for current conditions."
+                        f"Current output is {gap_pct:.0f}% below expected "
+                        f"({system.currentOutputKw} kW vs {system.expectedOutputKw} kW)."
                     ),
                     evidence=(
-                        f"daily_production_kwh={telemetry.daily_production_kwh}, "
-                        f"expected={telemetry.expected_daily_production_kwh}"
+                        f"systemData.currentOutputKw={system.currentOutputKw}, "
+                        f"expectedOutputKw={system.expectedOutputKw}"
                     ),
                 )
             )
             recommendations.append(
-                "Compare string-level output and check for shading or inverter clipping"
+                "Review inverter logs and compare with weather-adjusted baseline"
             )
 
-    if request.commissioning_checklist:
-        findings.extend(_commissioning_findings(request.commissioning_checklist))
+    inverter_status = system.inverterStatus.lower()
+    if inverter_status and any(keyword in inverter_status for keyword in FAULT_KEYWORDS):
+        findings.append(
+            Finding(
+                category="electrical",
+                severity="critical",
+                title="Inverter not operating normally",
+                description=f"Inverter status indicates a fault: {system.inverterStatus}.",
+                evidence=f"systemData.inverterStatus='{system.inverterStatus}'",
+            )
+        )
+        priority_actions.append(
+            "Inspect inverter display and reset only after root cause is identified"
+        )
 
-    if request.inspection_notes and "burn" in request.inspection_notes.lower():
+    grid_status = system.gridConnectionStatus.lower()
+    if grid_status and any(keyword in grid_status for keyword in ("disconnect", "off", "open")):
+        findings.append(
+            Finding(
+                category="electrical",
+                severity="critical",
+                title="Grid connection issue",
+                description=f"Grid connection status: {system.gridConnectionStatus}.",
+                evidence=f"systemData.gridConnectionStatus='{system.gridConnectionStatus}'",
+            )
+        )
+
+    if not system.lastCommunication:
+        findings.append(
+            Finding(
+                category="communication",
+                severity="warning",
+                title="Missing last communication timestamp",
+                description="Telemetry freshness cannot be verified.",
+                evidence="systemData.lastCommunication is empty",
+            )
+        )
+
+    for alert in request.alertHistory:
+        if not alert.alertCode and not alert.alertMessage:
+            continue
+        alert_severity = _severity_from_alert(alert.severity)
+        findings.append(
+            Finding(
+                category="electrical" if alert_severity == "critical" else "performance",
+                severity=alert_severity,
+                title=f"Alert: {alert.alertCode or 'UNKNOWN'}",
+                description=alert.alertMessage or "Active alert reported by monitoring system.",
+                evidence=(
+                    f"alertHistory alertCode={alert.alertCode}, "
+                    f"severity={alert.severity}, timestamp={alert.alertTimestamp}"
+                ),
+            )
+        )
+
+    recurring_categories = {
+        case.pastIssueCategory
+        for case in request.historicalCases
+        if case.pastIssueCategory
+    }
+    if len(recurring_categories) == 1 and len(request.historicalCases) >= 2:
+        category = next(iter(recurring_categories))
+        findings.append(
+            Finding(
+                category="performance",
+                severity="warning",
+                title="Recurring issue pattern",
+                description=f"Multiple historical cases share category '{category}'.",
+                evidence=f"historicalCases repeat pastIssueCategory='{category}'",
+            )
+        )
+        recommendations.append("Review prior resolutions before dispatching the same fix again")
+
+    summary_lower = request.caseSummary.lower() if request.caseSummary else ""
+    if summary_lower and any(word in summary_lower for word in ("burn", "smoke", "overheat")):
         findings.append(
             Finding(
                 category="safety",
                 severity="critical",
-                title="Signs of overheating",
-                description="Inspection notes mention burn marks or overheating.",
-                evidence="inspection_notes references burn/overheat",
+                title="Potential safety concern in case summary",
+                description="Case summary references overheating or burn-related symptoms.",
+                evidence="caseSummary contains safety-related keywords",
             )
         )
-        priority_actions.append("De-energize affected circuit and replace damaged connectors")
+        priority_actions.append("De-energize affected equipment before hands-on inspection")
+
+    if request.warrantyEligibilityFlag:
+        warranty_assessment = (
+            "Case appears warranty-eligible. Document findings and escalate to warranty review "
+            "before committing to billable repairs."
+        )
+    else:
+        warranty_assessment = (
+            "Warranty eligibility is false or unknown. Confirm coverage before parts replacement."
+        )
 
     severities = {finding.severity for finding in findings}
-    if "critical" in severities:
+    if "critical" in severities or request.priority.lower() in {"high", "critical", "p1"}:
         overall_status = "fail"
-        summary = "Critical issues detected that require immediate attention before full operation."
-        estimated_impact = "Significant production loss or safety risk until resolved"
-    elif "warning" in severities:
+        summary = (
+            request.caseSummary or "Critical issues detected requiring immediate service action."
+        )
+        estimated_impact = "Significant production loss, safety risk, or customer SLA breach"
+    elif "warning" in severities or request.priority.lower() in {"medium", "p2"}:
         overall_status = "warning"
-        summary = "Non-critical issues found. System may operate but needs follow-up."
-        estimated_impact = "Moderate production or compliance impact"
+        summary = request.caseSummary or "Non-critical issues found. Case needs follow-up."
+        estimated_impact = "Moderate production or service impact"
     else:
         overall_status = "pass"
-        summary = "No significant issues detected. System appears properly commissioned."
-        estimated_impact = "Minimal — system operating within expected parameters"
+        summary = request.caseSummary or "No significant issues detected from available case data."
+        estimated_impact = "Minimal impact expected"
 
     if not findings:
-        recommendations.append("Continue standard monitoring and schedule 30-day check-in")
+        recommendations.append(
+            "Continue monitoring and close case if customer confirms normal operation"
+        )
 
-    if not telemetry:
-        follow_up_questions.append("Can you provide string voltages and inverter fault codes?")
+    if system.expectedOutputKw == 0:
+        follow_up_questions.append("What is the expected output baseline for this system?")
 
     if not priority_actions and overall_status != "pass":
-        priority_actions.append("Review all open findings and re-test after corrective action")
+        priority_actions.append("Review alerts and dispatch field technician if issue persists")
 
     return DiagnosticResponse(
-        installation_id=request.installation_id,
+        caseId=request.caseId,
+        solarSystemId=request.solarSystemId,
         overall_status=overall_status,
         summary=summary,
         findings=findings,
-        recommendations=recommendations or ["Document all inspection results in the work order"],
+        recommendations=recommendations or ["Document case outcome in CRM"],
         priority_actions=priority_actions,
         estimated_impact=estimated_impact,
+        warranty_assessment=warranty_assessment,
         follow_up_questions=follow_up_questions,
     )
 
@@ -160,36 +201,39 @@ class DemoDiagnosticAgent:
         message = request.message.lower()
         actions: list[str] = []
 
-        if "string" in message and "0v" in message.replace(" ", ""):
+        if "inverter" in message:
             reply = (
-                "Start at the combiner box for the offline string: verify DC voltage at the "
-                "input terminals, then inspect each MC4 connector for looseness, corrosion, "
-                "or heat damage."
+                "Check inverter status, recent fault codes, and whether grid connection is stable. "
+                "Confirm whether output recovers after a controlled restart."
             )
             actions = [
-                "Measure voltage at combiner input",
-                "Inspect and re-crimp MC4 connectors if needed",
-                "Re-test string voltage before closing the box",
+                "Capture inverter event log",
+                "Verify AC/DC voltages at inverter terminals",
+                "Confirm grid connection status",
             ]
-        elif "production" in message or "underperform" in message:
+        elif "output" in message or "production" in message:
             reply = (
-                "Compare actual vs expected production per string, then check for shading, "
-                "soiling, inverter clipping, and communication faults in the monitoring portal."
+                "Compare currentOutputKw against expectedOutputKw, then review alertHistory "
+                "and weather-adjusted production for the same time window."
             )
             actions = [
-                "Pull per-string production from monitoring",
-                "Walk the array for new shading or soiling",
-                "Verify inverter is not faulted or curtailed",
+                "Pull hourly production trend",
+                "Check for active alerts affecting output",
+                "Validate monitoring communication timestamp",
             ]
         else:
             reply = (
-                "Share string voltages, inverter fault codes, and photos of the combiner "
-                "and inverter so I can narrow down the root cause."
+                "Share inverter status, latest alerts, and whether the issue matches any "
+                "historicalCases so I can narrow the next troubleshooting step."
             )
-            actions = ["Collect string-level DC readings", "Export inverter event log"]
+            actions = [
+                "Attach latest alertHistory entries",
+                "Confirm warrantyEligibilityFlag",
+                "Review past resolutions in historicalCases",
+            ]
 
         return ChatResponse(
-            installation_id=request.installation_id,
+            caseId=request.caseId,
             reply=reply,
             suggested_actions=actions,
         )

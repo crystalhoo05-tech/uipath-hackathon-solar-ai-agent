@@ -1,34 +1,26 @@
 {
-  "installation_id": "SOL-2024-001",
-  "site_address": "123 Solar Way, Austin, TX",
-  "system_specs": {
-    "panel_count": 24,
-    "panel_wattage": 400,
-    "inverter_model": "Enphase IQ8+",
-    "system_capacity_kw": 9.6,
-    "installation_date": "2024-06-15",
-    "mounting_type": "roof-mount"
+  "caseId": "CASE-2025-103",
+  "issueCategory": "Electrical",
+  "priority": "High",
+  "caseSummary": "Inverter faulted and grid disconnected.",
+  "solarSystemId": "SOL-2025-103",
+  "customerId": "CUST-33109",
+  "warrantyEligibilityFlag": true,
+  "systemData": {
+    "currentOutputKw": 1.2,
+    "expectedOutputKw": 5.8,
+    "inverterStatus": "Fault - Grid Disconnected",
+    "batteryChargePercent": 41,
+    "lastCommunication": "2025-06-20T15:45:00Z",
+    "gridConnectionStatus": "Disconnected"
   },
-  "telemetry": {
-    "ac_voltage": 238.5,
-    "dc_voltage": 385.2,
-    "ac_power_kw": 6.1,
-    "daily_production_kwh": 28.4,
-    "expected_daily_production_kwh": 42.0,
-    "inverter_fault_codes": ["AC voltage out of range"],
-    "string_voltages": [385.2, 382.1, 384.8, 0.0],
-    "ambient_temperature_c": 32,
-    "irradiance_wm2": 850
-  },
-  "inspection_notes": "String 4 shows 0V. AC voltage fluctuating between 235-242V.",
-  "technician_observations": [
-    "Possible loose connector on string 4 combiner",
-    "Production 32% below expected for current irradiance"
+  "alertHistory": [
+    {
+      "alertCode": "INV-GRID-FAULT",
+      "alertMessage": "Inverter lost grid connection",
+      "alertTimestamp": "2025-06-20T15:40:00Z",
+      "severity": "Critical"
+    }
   ],
-  "commissioning_checklist": {
-    "ground_fault_test": true,
-    "arc_fault_test": true,
-    "labeling_complete": false,
-    "monitoring_online": true
-  }
+  "historicalCases": []
 }

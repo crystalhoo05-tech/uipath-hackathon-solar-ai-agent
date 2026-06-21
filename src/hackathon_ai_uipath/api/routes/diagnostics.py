@@ -19,7 +19,7 @@ def run_diagnostic(
     request: DiagnosticRequest,
     agent: SolarDiagnosticAgent = Depends(get_diagnostic_agent),
 ) -> DiagnosticResponse:
-    """Run a full post-installation diagnostic analysis."""
+    """Run a diagnostic analysis for a solar service case."""
     return agent.run_diagnostic(request)
 
 

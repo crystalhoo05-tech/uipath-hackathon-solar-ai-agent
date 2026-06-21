@@ -4,37 +4,29 @@ import json
 from unittest.mock import MagicMock
 
 from hackathon_ai_uipath.agents.solar_diagnostic_agent import SolarDiagnosticAgent
-from hackathon_ai_uipath.models.schemas import (
-    ChatRequest,
-    DiagnosticRequest,
-    SystemSpecs,
-    TelemetryReading,
-)
+from hackathon_ai_uipath.models.schemas import ChatRequest, DiagnosticRequest, SystemData
 
 
 def test_run_diagnostic_calls_gemini_with_payload():
     gemini = MagicMock()
     gemini.generate_json.return_value = {
-        "installation_id": "SOL-001",
+        "caseId": "CASE-001",
+        "solarSystemId": "SOL-001",
         "overall_status": "pass",
-        "summary": "System commissioned successfully.",
+        "summary": "System operating normally.",
         "findings": [],
-        "recommendations": ["Complete labeling"],
+        "recommendations": ["Continue monitoring"],
         "priority_actions": [],
         "estimated_impact": "Minimal",
+        "warranty_assessment": "No warranty action required.",
         "follow_up_questions": [],
     }
 
     agent = SolarDiagnosticAgent(gemini)
     request = DiagnosticRequest(
-        installation_id="SOL-001",
-        system_specs=SystemSpecs(
-            panel_count=10,
-            panel_wattage=400,
-            inverter_model="IQ8",
-            system_capacity_kw=4.0,
-        ),
-        telemetry=TelemetryReading(ac_power_kw=3.5),
+        caseId="CASE-001",
+        solarSystemId="SOL-001",
+        systemData=SystemData(currentOutputKw=3.5, expectedOutputKw=3.8, inverterStatus="Online"),
     )
 
     response = agent.run_diagnostic(request)
@@ -42,15 +34,15 @@ def test_run_diagnostic_calls_gemini_with_payload():
     assert response.overall_status == "pass"
     gemini.generate_json.assert_called_once()
     call_kwargs = gemini.generate_json.call_args.kwargs
-    assert "SOL-001" in call_kwargs["user_prompt"]
+    assert "CASE-001" in call_kwargs["user_prompt"]
     payload_json = call_kwargs["user_prompt"].split("\n\n", 1)[1]
-    assert json.loads(payload_json)["installation_id"] == "SOL-001"
+    assert json.loads(payload_json)["caseId"] == "CASE-001"
 
 
 def test_chat_returns_structured_response():
     gemini = MagicMock()
     gemini.generate_json.return_value = {
-        "installation_id": "SOL-001",
+        "caseId": "CASE-001",
         "reply": "Verify inverter AC disconnect is closed.",
         "suggested_actions": ["Check AC voltage at disconnect"],
     }
@@ -58,7 +50,7 @@ def test_chat_returns_structured_response():
     agent = SolarDiagnosticAgent(gemini)
     response = agent.chat(
         ChatRequest(
-            installation_id="SOL-001",
+            caseId="CASE-001",
             message="Inverter shows no AC output.",
         )
     )
