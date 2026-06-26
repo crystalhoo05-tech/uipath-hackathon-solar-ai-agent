@@ -1,0 +1,27 @@
+{
+  "caseId": "CASE-2025-202",
+  "issueCategory": "Performance",
+  "priority": "High",
+  "caseSummary": "Customer reports low generation and missing cloud data for two days.",
+  "solarSystemId": "SOL-2025-202",
+  "customerId": "CUST-90002",
+  "warrantyEligibilityFlag": true,
+  "mockRebootOutcome": "needs_engineer",
+  "systemData": {
+    "currentOutputKw": 1.0,
+    "expectedOutputKw": 7.5,
+    "inverterStatus": "Online",
+    "batteryChargePercent": 55,
+    "lastCommunication": "",
+    "gridConnectionStatus": "Connected"
+  },
+  "alertHistory": [
+    {
+      "alertCode": "PERF-UNDERPRODUCTION",
+      "alertMessage": "Output 87% below expected",
+      "alertTimestamp": "2025-06-21T07:30:00Z",
+      "severity": "Critical"
+    }
+  ],
+  "historicalCases": []
+}

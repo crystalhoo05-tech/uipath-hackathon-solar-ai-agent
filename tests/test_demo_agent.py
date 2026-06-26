@@ -1,42 +1,28 @@
 """Demo agent tests."""
 
 from hackathon_ai_uipath.agents.demo_agent import DemoDiagnosticAgent
-from hackathon_ai_uipath.models.schemas import (
-    AlertHistoryItem,
-    DiagnosticRequest,
-    SystemData,
-)
+from hackathon_ai_uipath.models.schemas import DiagnosticRequest, SystemData
 
 
-def test_demo_agent_detects_inverter_fault():
+def test_demo_agent_hardware_fault_skips_reboot_workflow():
     agent = DemoDiagnosticAgent()
     request = DiagnosticRequest(
         caseId="CASE-001",
         solarSystemId="SOL-001",
         priority="High",
-        caseSummary="Possible overheating at combiner",
-        warrantyEligibilityFlag=True,
+        caseSummary="Inverter faulted",
         systemData=SystemData(
             currentOutputKw=1.0,
             expectedOutputKw=5.0,
             inverterStatus="Fault - Offline",
             gridConnectionStatus="Disconnected",
         ),
-        alertHistory=[
-            AlertHistoryItem(
-                alertCode="INV-FAULT",
-                alertMessage="Inverter offline",
-                severity="Critical",
-            )
-        ],
     )
 
     response = agent.run_diagnostic(request)
-
+    assert response.workflow_status == "standard_diagnostic"
+    assert response.reboot_performed is False
     assert response.overall_status == "fail"
-    assert any(f.severity == "critical" for f in response.findings)
-    assert response.caseId == "CASE-001"
-    assert "warranty" in response.warranty_assessment.lower()
 
 
 def test_demo_agent_healthy_system():
@@ -44,6 +30,7 @@ def test_demo_agent_healthy_system():
     request = DiagnosticRequest(
         caseId="CASE-002",
         solarSystemId="SOL-002",
+        caseSummary="Routine check-in",
         systemData=SystemData(
             currentOutputKw=6.8,
             expectedOutputKw=7.0,

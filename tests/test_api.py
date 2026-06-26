@@ -10,7 +10,7 @@ from hackathon_ai_uipath.api.dependencies import get_diagnostic_agent
 from hackathon_ai_uipath.models.schemas import (
     ChatResponse,
     DiagnosticResponse,
-    Finding,
+    WorkflowStep,
 )
 
 
@@ -20,26 +20,30 @@ def mock_agent():
     agent.run_diagnostic.return_value = DiagnosticResponse(
         caseId="CASE-001",
         solarSystemId="SOL-001",
-        overall_status="warning",
-        summary="Output is below expected and inverter shows a fault.",
-        findings=[
-            Finding(
-                category="electrical",
-                severity="critical",
-                title="Inverter fault",
-                description="Inverter is not operating normally.",
-                evidence="systemData.inverterStatus='Fault'",
+        overall_status="pass",
+        summary="Case resolved after remote reboot.",
+        findings=[],
+        recommendations=["Close case"],
+        priority_actions=[],
+        estimated_impact="Minimal",
+        warranty_assessment="Warranty eligible.",
+        workflow_status="resolved",
+        reboot_performed=True,
+        workflow_steps=[
+            WorkflowStep(
+                step_number=1,
+                name="Triage",
+                action="Classify complaint",
+                status="completed",
+                result="Reboot candidate",
             )
         ],
-        recommendations=["Inspect inverter event log"],
-        priority_actions=["Verify grid connection"],
-        estimated_impact="Significant production loss until repaired",
-        warranty_assessment="Case may be warranty-eligible.",
+        resolution_summary="Generation normalized after reboot.",
     )
     agent.chat.return_value = ChatResponse(
         caseId="CASE-001",
-        reply="Check the inverter fault code and grid connection first.",
-        suggested_actions=["Capture inverter event log"],
+        reply="Remote reboot is the first step for missing cloud data complaints.",
+        suggested_actions=["Trigger remote reboot"],
     )
     return agent
 
@@ -63,40 +67,32 @@ def test_run_diagnostic(client, mock_agent):
     payload = {
         "caseId": "CASE-001",
         "solarSystemId": "SOL-001",
-        "issueCategory": "Electrical",
-        "priority": "High",
+        "caseSummary": "No data in portal and low generation",
+        "mockRebootOutcome": "resolved",
         "systemData": {
-            "currentOutputKw": 1.0,
-            "expectedOutputKw": 5.0,
-            "inverterStatus": "Fault",
-            "gridConnectionStatus": "Disconnected",
+            "currentOutputKw": 0.5,
+            "expectedOutputKw": 6.0,
+            "inverterStatus": "Online",
+            "lastCommunication": "",
         },
-        "alertHistory": [
-            {
-                "alertCode": "INV-FAULT",
-                "alertMessage": "Inverter fault",
-                "severity": "Critical",
-            }
-        ],
     }
 
     response = client.post("/api/v1/diagnostics/run", json=payload)
     assert response.status_code == 200
     body = response.json()
-    assert body["overall_status"] == "warning"
-    assert body["findings"][0]["severity"] == "critical"
-    assert body["caseId"] == "CASE-001"
+    assert body["workflow_status"] == "resolved"
+    assert body["reboot_performed"] is True
     mock_agent.run_diagnostic.assert_called_once()
 
 
 def test_diagnostic_chat(client, mock_agent):
     payload = {
         "caseId": "CASE-001",
-        "message": "What should I check first on the inverter?",
+        "message": "Should we reboot first?",
     }
 
     response = client.post("/api/v1/diagnostics/chat", json=payload)
     assert response.status_code == 200
     body = response.json()
-    assert "inverter" in body["reply"].lower()
+    assert "reboot" in body["reply"].lower()
     mock_agent.chat.assert_called_once()

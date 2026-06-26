@@ -1,0 +1,27 @@
+{
+  "caseId": "CASE-2025-201",
+  "issueCategory": "Communication",
+  "priority": "Medium",
+  "caseSummary": "Customer says no data in portal and generation looks low, but weather is sunny.",
+  "solarSystemId": "SOL-2025-201",
+  "customerId": "CUST-90001",
+  "warrantyEligibilityFlag": true,
+  "mockRebootOutcome": "resolved",
+  "systemData": {
+    "currentOutputKw": 0.5,
+    "expectedOutputKw": 6.2,
+    "inverterStatus": "Online",
+    "batteryChargePercent": 68,
+    "lastCommunication": "",
+    "gridConnectionStatus": "Connected"
+  },
+  "alertHistory": [
+    {
+      "alertCode": "COMM-STALE",
+      "alertMessage": "No telemetry received in 36 hours",
+      "alertTimestamp": "2025-06-21T08:00:00Z",
+      "severity": "Warning"
+    }
+  ],
+  "historicalCases": []
+}

@@ -3,6 +3,10 @@
 import json
 from typing import Any
 
+from hackathon_ai_uipath.agents.diagnostic_workflow import (
+    run_reboot_workflow,
+    should_run_reboot_workflow,
+)
 from hackathon_ai_uipath.agents.gemini_client import GeminiClient
 from hackathon_ai_uipath.models.schemas import (
     ChatRequest,
@@ -14,19 +18,15 @@ from hackathon_ai_uipath.models.schemas import (
 SYSTEM_INSTRUCTION = """You are an expert solar PV service and post-installation
 diagnostic engineer.
 
-Analyze support case data for installed solar systems and identify:
-- Performance issues (output below expected, clipping, underproduction)
-- Electrical and inverter issues (faults, grid disconnect, inverter offline)
-- Communication issues (stale telemetry, monitoring gaps)
-- Battery and storage concerns when battery data is present
-- Safety risks indicated by alerts or case summaries
-- Warranty implications based on warrantyEligibilityFlag and issue category
-- Recurring issues suggested by historicalCases
+Workflow policy:
+1. If the complaint is low generation or missing cloud data with no hardware fault,
+   the first action is a remote reboot (inverter may have lost internet; data stuck
+   locally and not pushed to cloud).
+2. After reboot, if generation and telemetry normalize, mark the case resolved.
+3. If generation remains abnormal, return engineer debug steps for field review.
 
-Be practical and field-oriented. Base conclusions on the evidence provided.
-When data is missing, note assumptions and ask focused follow-up questions.
-Prioritize safety-critical and high-priority cases first.
-Consider alertHistory severity and whether historicalCases show repeat failures."""
+Analyze support case data and identify performance, electrical, communication,
+safety, and warranty issues. Be practical and field-oriented."""
 
 DIAGNOSTIC_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -64,6 +64,13 @@ DIAGNOSTIC_RESPONSE_SCHEMA: dict[str, Any] = {
         "estimated_impact": {"type": "string"},
         "warranty_assessment": {"type": "string"},
         "follow_up_questions": {"type": "array", "items": {"type": "string"}},
+        "workflow_status": {
+            "type": "string",
+            "enum": ["resolved", "needs_engineer_review", "standard_diagnostic"],
+        },
+        "reboot_performed": {"type": "boolean"},
+        "engineer_debug_steps": {"type": "array", "items": {"type": "string"}},
+        "resolution_summary": {"type": "string"},
     },
     "required": [
         "caseId",
@@ -76,6 +83,9 @@ DIAGNOSTIC_RESPONSE_SCHEMA: dict[str, Any] = {
         "estimated_impact",
         "warranty_assessment",
         "follow_up_questions",
+        "workflow_status",
+        "reboot_performed",
+        "engineer_debug_steps",
     ],
 }
 
@@ -95,6 +105,9 @@ class SolarDiagnosticAgent:
         self.gemini = gemini_client
 
     def run_diagnostic(self, request: DiagnosticRequest) -> DiagnosticResponse:
+        if should_run_reboot_workflow(request):
+            return run_reboot_workflow(request)
+
         payload = request.model_dump(mode="json", exclude_none=True)
         user_prompt = (
             "Analyze this solar service case payload and return a structured diagnostic report.\n\n"
@@ -106,7 +119,10 @@ class SolarDiagnosticAgent:
             user_prompt=user_prompt,
             response_schema=DIAGNOSTIC_RESPONSE_SCHEMA,
         )
-        return DiagnosticResponse.model_validate(result)
+        response = DiagnosticResponse.model_validate(result)
+        if response.workflow_status == "standard_diagnostic" and not response.workflow_steps:
+            return response
+        return response
 
     def chat(self, request: ChatRequest) -> ChatResponse:
         context_block = ""

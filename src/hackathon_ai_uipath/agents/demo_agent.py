@@ -1,5 +1,9 @@
 """Rule-based diagnostic agent for local testing without Gemini."""
 
+from hackathon_ai_uipath.agents.diagnostic_workflow import (
+    run_reboot_workflow,
+    should_run_reboot_workflow,
+)
 from hackathon_ai_uipath.models.schemas import (
     ChatRequest,
     ChatResponse,
@@ -21,7 +25,7 @@ def _severity_from_alert(severity: str) -> str:
     return "info"
 
 
-def _analyze_request(request: DiagnosticRequest) -> DiagnosticResponse:
+def _standard_diagnostic(request: DiagnosticRequest) -> DiagnosticResponse:
     findings: list[Finding] = []
     recommendations: list[str] = []
     priority_actions: list[str] = []
@@ -109,37 +113,6 @@ def _analyze_request(request: DiagnosticRequest) -> DiagnosticResponse:
             )
         )
 
-    recurring_categories = {
-        case.pastIssueCategory
-        for case in request.historicalCases
-        if case.pastIssueCategory
-    }
-    if len(recurring_categories) == 1 and len(request.historicalCases) >= 2:
-        category = next(iter(recurring_categories))
-        findings.append(
-            Finding(
-                category="performance",
-                severity="warning",
-                title="Recurring issue pattern",
-                description=f"Multiple historical cases share category '{category}'.",
-                evidence=f"historicalCases repeat pastIssueCategory='{category}'",
-            )
-        )
-        recommendations.append("Review prior resolutions before dispatching the same fix again")
-
-    summary_lower = request.caseSummary.lower() if request.caseSummary else ""
-    if summary_lower and any(word in summary_lower for word in ("burn", "smoke", "overheat")):
-        findings.append(
-            Finding(
-                category="safety",
-                severity="critical",
-                title="Potential safety concern in case summary",
-                description="Case summary references overheating or burn-related symptoms.",
-                evidence="caseSummary contains safety-related keywords",
-            )
-        )
-        priority_actions.append("De-energize affected equipment before hands-on inspection")
-
     if request.warrantyEligibilityFlag:
         warranty_assessment = (
             "Case appears warranty-eligible. Document findings and escalate to warranty review "
@@ -171,9 +144,6 @@ def _analyze_request(request: DiagnosticRequest) -> DiagnosticResponse:
             "Continue monitoring and close case if customer confirms normal operation"
         )
 
-    if system.expectedOutputKw == 0:
-        follow_up_questions.append("What is the expected output baseline for this system?")
-
     if not priority_actions and overall_status != "pass":
         priority_actions.append("Review alerts and dispatch field technician if issue persists")
 
@@ -188,6 +158,7 @@ def _analyze_request(request: DiagnosticRequest) -> DiagnosticResponse:
         estimated_impact=estimated_impact,
         warranty_assessment=warranty_assessment,
         follow_up_questions=follow_up_questions,
+        workflow_status="standard_diagnostic",
     )
 
 
@@ -195,42 +166,39 @@ class DemoDiagnosticAgent:
     """Deterministic agent used when DEMO_MODE=true."""
 
     def run_diagnostic(self, request: DiagnosticRequest) -> DiagnosticResponse:
-        return _analyze_request(request)
+        if should_run_reboot_workflow(request):
+            return run_reboot_workflow(request)
+        return _standard_diagnostic(request)
 
     def chat(self, request: ChatRequest) -> ChatResponse:
         message = request.message.lower()
         actions: list[str] = []
 
-        if "inverter" in message:
+        if "reboot" in message:
             reply = (
-                "Check inverter status, recent fault codes, and whether grid connection is stable. "
-                "Confirm whether output recovers after a controlled restart."
+                "For low generation or missing cloud data, the agent first sends a remote reboot "
+                "to flush local inverter storage to the cloud. If generation normalizes, the case "
+                "can be closed. Otherwise escalate with engineer debug steps."
+            )
+            actions = [
+                "Trigger remote reboot",
+                "Wait 5-10 minutes for cloud sync",
+                "Re-check currentOutputKw and lastCommunication",
+            ]
+        elif "inverter" in message:
+            reply = (
+                "Check inverter status, recent fault codes, and whether grid connection is stable."
             )
             actions = [
                 "Capture inverter event log",
                 "Verify AC/DC voltages at inverter terminals",
-                "Confirm grid connection status",
-            ]
-        elif "output" in message or "production" in message:
-            reply = (
-                "Compare currentOutputKw against expectedOutputKw, then review alertHistory "
-                "and weather-adjusted production for the same time window."
-            )
-            actions = [
-                "Pull hourly production trend",
-                "Check for active alerts affecting output",
-                "Validate monitoring communication timestamp",
             ]
         else:
             reply = (
-                "Share inverter status, latest alerts, and whether the issue matches any "
-                "historicalCases so I can narrow the next troubleshooting step."
+                "Share whether the complaint is missing cloud data or low generation so I can "
+                "decide if a remote reboot is the first step."
             )
-            actions = [
-                "Attach latest alertHistory entries",
-                "Confirm warrantyEligibilityFlag",
-                "Review past resolutions in historicalCases",
-            ]
+            actions = ["Confirm complaint type", "Review lastCommunication timestamp"]
 
         return ChatResponse(
             caseId=request.caseId,

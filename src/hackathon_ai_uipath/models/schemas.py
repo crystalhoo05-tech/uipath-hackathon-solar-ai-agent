@@ -39,6 +39,17 @@ class DiagnosticRequest(BaseModel):
     systemData: SystemData = Field(default_factory=SystemData)
     alertHistory: list[AlertHistoryItem] = Field(default_factory=list)
     historicalCases: list[HistoricalCaseItem] = Field(default_factory=list)
+    # Mock controls for reboot workflow testing
+    mockRebootOutcome: Literal["auto", "resolved", "needs_engineer"] = "auto"
+    postRebootSystemData: SystemData | None = None
+
+
+class WorkflowStep(BaseModel):
+    step_number: int
+    name: str
+    action: str
+    status: Literal["completed", "skipped"]
+    result: str
 
 
 class Finding(BaseModel):
@@ -67,6 +78,13 @@ class DiagnosticResponse(BaseModel):
     estimated_impact: str
     warranty_assessment: str
     follow_up_questions: list[str] = Field(default_factory=list)
+    workflow_status: Literal["resolved", "needs_engineer_review", "standard_diagnostic"] = (
+        "standard_diagnostic"
+    )
+    reboot_performed: bool = False
+    workflow_steps: list[WorkflowStep] = Field(default_factory=list)
+    engineer_debug_steps: list[str] = Field(default_factory=list)
+    resolution_summary: str | None = None
 
 
 class ChatMessage(BaseModel):

@@ -10,6 +10,7 @@ from hackathon_ai_uipath.models.schemas import (
     Finding,
     HistoricalCaseItem,
     SystemData,
+    WorkflowStep,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "Finding",
     "HistoricalCaseItem",
     "SystemData",
+    "WorkflowStep",
 ]
