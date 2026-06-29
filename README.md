@@ -65,15 +65,11 @@ Both agents are `type: "lowCode"` Agent Builder agents with structured JSON inpu
 
 | Component | Role |
 |-----------|------|
-| **Agentic Process** (BPMN) | End-to-end case orchestration |
-| **Orchestrator.StartAgentJob** | Invokes Solar AI Intake Agent |
+| **UiPath Maestro** | End-to-end case orchestration |
+| **UiPath Orchestrator.StartAgentJob** | Invokes Solar AI Intake Agent |
 | **HTTP Request** (`uipath-uipath-http`) | Calls the external Gemini diagnostic API |
-| **Exclusive / parallel gateways** | Branch on diagnostic result, warranty, engineer decision |
-| **Solar Engineer Review (HITL)** | Human-in-the-loop script task for engineer approval |
-| **SimpleApprovalApp** | Workflow App for human review actions |
-| **User tasks** | Schedule site inspection, confirm issue resolved |
-| **Orchestrator queues** | `EngineerReviewQueue` and related queues for task routing |
-| **Service tasks** | Create technician task, notify customer, submit warranty request |
+| **Solar Engineer Review (HITL)** | Human-in-the-loop task for engineer approval |
+| **UIPath Task Center** | Simulate Human in The Loop Task |
 
 ### External integration
 
